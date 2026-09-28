@@ -1,0 +1,19 @@
+# Python cache files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Database storage files & directories
+*.db
+db_data/
+web_db_data/
+tmp_test_db/
+
+# Logs & temporary files
+*.log
+server.log
+.pytest_cache/
+
+# IDE settings
+.vscode/
+.idea/

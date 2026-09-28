@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MiniDB - Database Engine Workbench & Visualizer</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Top Navigation Header -->
+    <header class="navbar">
+        <div class="brand">
+            <div class="brand-icon"><i class="fa-solid fa-database"></i></div>
+            <div class="brand-text">
+                <span class="brand-title">MiniDB Engine</span>
+                <span class="brand-subtitle">DBMS Internals & Workbench</span>
+            </div>
+        </div>
+
+        <nav class="nav-tabs">
+            <button class="nav-tab active" data-tab="workbench"><i class="fa-solid fa-code"></i> SQL Workbench</button>
+            <button class="nav-tab" data-tab="indexing"><i class="fa-solid fa-sitemap"></i> B+Tree & Hash Index</button>
+            <button class="nav-tab" data-tab="storage"><i class="fa-solid fa-microchip"></i> Page & Buffer Pool</button>
+            <button class="nav-tab" data-tab="benchmark"><i class="fa-solid fa-bolt"></i> Speed Benchmark</button>
+        </nav>
+
+        <div class="nav-actions">
+            <span class="badge badge-success"><i class="fa-solid fa-circle-check"></i> Engine Active</span>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="app-container">
+        
+        <!-- TAB 1: SQL WORKBENCH -->
+        <section id="tab-workbench" class="tab-content active">
+            <div class="workbench-layout">
+                <!-- Left Sidebar: Schema Browser & Sample Queries -->
+                <aside class="sidebar">
+                    <div class="panel-header">
+                        <h3><i class="fa-solid fa-folder-tree"></i> System Catalog</h3>
+                        <button class="btn-icon" id="btn-refresh-tables" title="Refresh Catalog"><i class="fa-solid fa-rotate"></i></button>
+                    </div>
+                    <div class="schema-tree" id="schema-tree-container">
+                        <!-- Populated dynamically -->
+                    </div>
+
+                    <div class="panel-header mt-4">
+                        <h3><i class="fa-solid fa-wand-magic-sparkles"></i> Preset Queries</h3>
+                    </div>
+                    <div class="preset-queries">
+                        <button class="preset-btn" data-sql="SELECT * FROM products WHERE price > 100 ORDER BY price DESC LIMIT 10;">
+                            <i class="fa-solid fa-magnifying-glass"></i> Top 10 Expensive Products
+                        </button>
+                        <button class="preset-btn" data-sql="SELECT * FROM products WHERE id = 42;">
+                            <i class="fa-solid fa-bolt"></i> B+ Tree Index Search (id = 42)
+                        </button>
+                        <button class="preset-btn" data-sql="SELECT * FROM products WHERE category = 'Electronics';">
+                            <i class="fa-solid fa-hashtag"></i> Hash Index Search (Electronics)
+                        </button>
+                        <button class="preset-btn" data-sql="SELECT COUNT(*), AVG(price), MAX(price) FROM products;">
+                            <i class="fa-solid fa-calculator"></i> Aggregate Summary (COUNT, AVG, MAX)
+                        </button>
+                        <button class="preset-btn" data-sql="SELECT * FROM products WHERE name LIKE 'Wireless%' ORDER BY price ASC;">
+                            <i class="fa-solid fa-filter"></i> Pattern Match (LIKE 'Wireless%')
+                        </button>
+                        <button class="preset-btn" data-sql="EXPLAIN SELECT * FROM products WHERE id = 15;">
+                            <i class="fa-solid fa-diagram-project"></i> EXPLAIN Query Plan
+                        </button>
+                        <button class="preset-btn" data-sql="INSERT INTO products VALUES (101, 'Mechanical Gaming Keyboard X', 'Electronics', 149.99, 45);">
+                            <i class="fa-solid fa-plus"></i> INSERT New Product
+                        </button>
+                    </div>
+                </aside>
+
+                <!-- Center/Right: Query Editor & Result Output -->
+                <div class="query-area">
+                    <div class="editor-panel">
+                        <div class="editor-toolbar">
+                            <span class="editor-title"><i class="fa-solid fa-terminal"></i> SQL Query Editor</span>
+                            <div class="toolbar-btns">
+                                <button id="btn-clear-query" class="btn btn-secondary"><i class="fa-solid fa-trash"></i> Clear</button>
+                                <button id="btn-run-query" class="btn btn-primary"><i class="fa-solid fa-play"></i> Execute Query (Ctrl+Enter)</button>
+                            </div>
+                        </div>
+                        <textarea id="sql-editor" placeholder="Enter SQL query (e.g. SELECT * FROM products WHERE id = 5;)..."></textarea>
+                    </div>
+
+                    <!-- Query Stats Bar -->
+                    <div id="stats-bar" class="stats-bar hidden">
+                        <span class="stat-item"><i class="fa-solid fa-clock"></i> Time: <strong id="stat-time">0 ms</strong></span>
+                        <span class="stat-item"><i class="fa-solid fa-table-list"></i> Rows: <strong id="stat-rows">0</strong></span>
+                        <span class="stat-item" id="stat-plan-container"><i class="fa-solid fa-network-wired"></i> Plan: <strong id="stat-plan">-</strong></span>
+                    </div>
+
+                    <!-- Query Result Table / Output -->
+                    <div class="results-panel">
+                        <div class="panel-header">
+                            <h3><i class="fa-solid fa-table"></i> Query Results</h3>
+                            <div class="tab-subnav">
+                                <button class="subtab-btn active" data-subtab="result-table">Table View</button>
+                                <button class="subtab-btn" data-subtab="result-plan">Plan Tree</button>
+                            </div>
+                        </div>
+                        <div id="result-table-view" class="subtab-content active">
+                            <div class="table-responsive" id="query-result-table">
+                                <div class="empty-state">
+                                    <i class="fa-solid fa-terminal"></i>
+                                    <p>Execute a query above to display results.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="result-plan-view" class="subtab-content">
+                            <div id="query-plan-tree-container" class="plan-tree-container">
+                                <div class="empty-state">
+                                    <i class="fa-solid fa-diagram-project"></i>
+                                    <p>Execute a query to view its Volcano physical execution operator tree.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: INDEX VISUALIZER -->
+        <section id="tab-indexing" class="tab-content">
+            <div class="indexing-layout">
+                <div class="index-controls card">
+                    <div class="control-group">
+                        <label for="select-table-index"><i class="fa-solid fa-table"></i> Table:</label>
+                        <select id="select-table-index">
+                            <option value="products">products</option>
+                            <option value="users">users</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label for="select-column-index"><i class="fa-solid fa-key"></i> Indexed Column:</label>
+                        <select id="select-column-index">
+                            <option value="id">id (B+ Tree)</option>
+                            <option value="category">category (Hash Index)</option>
+                        </select>
+                    </div>
+                    <button id="btn-render-index" class="btn btn-primary"><i class="fa-solid fa-arrows-rotate"></i> Refresh Index Graph</button>
+                </div>
+
+                <div class="index-visual-grid">
+                    <!-- B+ Tree Visualizer Card -->
+                    <div class="card visual-card">
+                        <div class="card-header">
+                            <h3><i class="fa-solid fa-sitemap"></i> B+ Tree Index Inspector (O(log N) Range & Search)</h3>
+                            <span class="badge badge-accent">Disk/Memory B+ Tree</span>
+                        </div>
+                        <div class="card-body">
+                            <div id="btree-graph-container" class="btree-container">
+                                <div class="loading-spinner"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading B+ Tree...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Hash Index Visualizer Card -->
+                    <div class="card visual-card">
+                        <div class="card-header">
+                            <h3><i class="fa-solid fa-hashtag"></i> Extendible Hash Index (O(1) Exact Lookup)</h3>
+                            <span class="badge badge-purple">Dynamic Buckets</span>
+                        </div>
+                        <div class="card-body">
+                            <div id="hash-graph-container" class="hash-container">
+                                <div class="loading-spinner"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading Hash Index...</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: SLOTTED PAGE & BUFFER POOL -->
+        <section id="tab-storage" class="tab-content">
+            <div class="storage-layout">
+                <!-- Buffer Pool Frame Matrix -->
+                <div class="card storage-card">
+                    <div class="card-header">
+                        <h3><i class="fa-solid fa-memory"></i> Buffer Pool Manager (LRU Cache Frames)</h3>
+                        <div class="bp-metrics" id="bp-metrics-summary">
+                            <span class="metric-pill"><i class="fa-solid fa-bullseye"></i> Hit Ratio: <strong id="bp-hit-ratio">100%</strong></span>
+                            <span class="metric-pill"><i class="fa-solid fa-check"></i> Hits: <strong id="bp-hits">0</strong></span>
+                            <span class="metric-pill"><i class="fa-solid fa-xmark"></i> Misses: <strong id="bp-misses">0</strong></span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="buffer-pool-grid" class="buffer-pool-grid">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Slotted Page Inspector -->
+                <div class="card storage-card mt-4">
+                    <div class="card-header">
+                        <h3><i class="fa-solid fa-hard-drive"></i> Slotted Page Disk Layout (4096 Bytes Page #<span id="inspect-page-id">0</span>)</h3>
+                        <div class="page-select-controls">
+                            <label for="select-page-id">Page ID:</label>
+                            <select id="select-page-id">
+                                <option value="0">Page 0</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="page-layout-visualizer" class="page-visualizer">
+                            <!-- Slotted Page Visualization -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 4: SPEED BENCHMARK -->
+        <section id="tab-benchmark" class="tab-content">
+            <div class="benchmark-layout">
+                <div class="card benchmark-card">
+                    <div class="card-header">
+                        <h3><i class="fa-solid fa-gauge-high"></i> DBMS Indexing Performance Benchmark</h3>
+                        <button id="btn-run-benchmark" class="btn btn-primary"><i class="fa-solid fa-bolt"></i> Run Benchmark (500 Records)</button>
+                    </div>
+                    <div class="card-body">
+                        <p class="benchmark-intro">
+                            Compares execution time across 500 inserted database records: 
+                            <strong>Full Sequential Table Scan (O(N))</strong> vs 
+                            <strong>B+ Tree Index Scan (O(log N))</strong> vs 
+                            <strong>Extendible Hash Index (O(1))</strong>.
+                        </p>
+
+                        <div id="benchmark-results-container" class="benchmark-results">
+                            <div class="empty-state">
+                                <i class="fa-solid fa-chart-bar"></i>
+                                <p>Click "Run Benchmark" to execute performance comparison.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>
